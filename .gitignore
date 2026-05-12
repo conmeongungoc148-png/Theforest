@@ -1,0 +1,18 @@
+# Biên dịch
+*.exe
+*.o
+*.out
+
+# IDE và Công cụ
+.vscode/
+.gemini/
+.idea/
+
+# Hệ thống
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Tạm thời
+*.tmp
+*.log
