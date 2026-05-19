@@ -53,11 +53,10 @@ MyCamera CameraNew(float x, float y, float screenW, float screenH) {
     cam.smoothMode  = CAM_SMOOTH_DAMPED;
     cam.smoothSpeed = 8.0f;
 
+    cam.deadzoneEnabled = false;
+    cam.boundsEnabled   = false;
     cam.shakeTimer      = 0.0f;
     cam.shakeMagnitude  = 0.0f;
-
-    cam.viewportWidth   = screenW;
-    cam.viewportHeight  = screenH;
 
     return cam;
 }
@@ -125,19 +124,15 @@ void CameraUpdate(MyCamera *cam, Vector2 targetPos, float deltaTime) {
 
     // 3. GIỚI HẠN BIÊN BẢN ĐỒ (Camera Bounds Clamping)
     if (cam->boundsEnabled) {
-        // Khoảng cách từ mục tiêu (target) đến các cạnh màn hình trong thế giới thực
-        float leftSpace   = cam->rl.offset.x / cam->zoom;
-        float rightSpace  = (cam->viewportWidth - cam->rl.offset.x) / cam->zoom;
-        float topSpace    = cam->rl.offset.y / cam->zoom;
-        float bottomSpace = (cam->viewportHeight - cam->rl.offset.y) / cam->zoom;
+        float halfW = cam->rl.offset.x / cam->zoom;
+        float halfH = cam->rl.offset.y / cam->zoom;
 
-        cam->target.x = Clampf(cam->target.x, 
-            cam->bounds.x + leftSpace, 
-            cam->bounds.x + cam->bounds.width - rightSpace);
-            
-        cam->target.y = Clampf(cam->target.y, 
-            cam->bounds.y + topSpace, 
-            cam->bounds.y + cam->bounds.height - bottomSpace);
+        cam->target.x = Clampf(cam->target.x,
+            cam->bounds.x + halfW,
+            cam->bounds.x + cam->bounds.width  - halfW);
+        cam->target.y = Clampf(cam->target.y,
+            cam->bounds.y + halfH,
+            cam->bounds.y + cam->bounds.height - halfH);
     }
 
     // 4. XỬ LÝ SCREEN SHAKE

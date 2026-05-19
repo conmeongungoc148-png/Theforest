@@ -2,27 +2,75 @@
 #define GAME_H
 
 #include "raylib.h"
-#include <stdbool.h>
 
-// --- Cấu trúc Nhân vật ---
+// --- Tiled Structures ---
+typedef struct {
+    float x, y;
+} Point;
+
+typedef struct {
+    char name[64];
+    float x, y, width, height, rotation;
+    bool visible, flipX, flipY;
+    Texture2D texture;
+    float opacity;
+    Point *polygon;
+    int polygonCount;
+} TMJObject;
+
+typedef struct {
+    char name[64];
+    char type[32];
+    bool visible;
+    float opacity;
+    TMJObject *objects;
+    int objectCount;
+    int *data;      // For tile layers
+    int width, height;
+    float offsetx, offsety;
+} TMJLayer;
+
+typedef struct {
+    int firstgid;
+    char imagePath[256];
+    Texture2D texture;
+    int tileWidth, tileHeight;
+    int spacing, margin;
+    int columns;
+} TMJTileset;
+
+typedef struct {
+    int mapWidth, mapHeight, tileWidth, tileHeight;
+    TMJLayer *layers;
+    int layerCount;
+    TMJTileset *tilesets;
+    int tilesetCount;
+} GameMap;
+
+// --- Player Structure ---
 typedef struct {
     Vector2 position;
-    Vector2 velocity;
+    Vector2 velocity; // Để xử lý trọng lực và quán tính
     Vector2 speed;
-    float   groundY;
-    bool    facingRight;
-    bool    isJumping;
-    bool    isRunning;
-    bool    isSprinting;
-    bool    isAttacking;
-    float   freezeTimer;
-    int     currentFrame;
-    float   frameTimer;
+    int currentFrame;
+    float frameTimer;
+    float groundY;    // Mốc mặt đất để va chạm
+    bool isRunning;
+    bool isSprinting;
+    bool isJumping;
+    bool isAttacking;
+    bool facingRight;
+    float freezeTimer; // Thời gian khựng khi tấn công
+    bool loadNextMap;  // Flag để báo hiệu chuyển map
 } Player;
 
-// --- API Nhân vật ---
+// --- API ---
+GameMap LoadMapData(const char *filename);
+void UnloadMapData(GameMap *map);
+Texture2D GetCachedTexture(const char* path);
+
 void InitPlayer(Player *player, Vector2 pos);
-void UpdatePlayer(Player *player, float deltaTime);
+void UpdatePlayer(Player *player, GameMap *map, float deltaTime);
 void DrawPlayer(Player *player, Texture2D idle, Texture2D walk, Texture2D run, Texture2D jump, Texture2D attack, int frameW, int frameH, float scale);
 
-#endif // GAME_H
+#endif

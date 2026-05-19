@@ -38,10 +38,6 @@ typedef struct {
     // Screen shake
     float      shakeTimer;
     float      shakeMagnitude;
-
-    // Viewport dimensions (Kích thước màn hình ảo)
-    float      viewportWidth;
-    float      viewportHeight;
 } MyCamera;
 
 // --- API Functions ---
