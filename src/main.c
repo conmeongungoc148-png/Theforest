@@ -18,7 +18,7 @@ Vector2 FindSpawnPoint(GameMap *map, Vector2 defaultPos) {
                 if (TextIsEqual(obj->name, "spawn") || TextIsEqual(obj->name, "Spawn") ||
                     TextIsEqual(map->layers[i].name, "spawn") || TextIsEqual(map->layers[i].name, "Spawn")) {
                     float spawnX = obj->x + map->layers[i].offsetx;
-                    float spawnY = obj->y + map->layers[i].offsety + obj->height - 20.0f;
+                    float spawnY = obj->y + map->layers[i].offsety + obj->height - 64.0f;
                     TraceLog(LOG_INFO, "[SPAWN] Found spawn point at: %.2f, %.2f", spawnX, spawnY);
                     return (Vector2){spawnX, spawnY};
                 }
@@ -27,6 +27,72 @@ Vector2 FindSpawnPoint(GameMap *map, Vector2 defaultPos) {
     }
     TraceLog(LOG_WARNING, "[SPAWN] Spawn point NOT found! Using default: %.2f, %.2f", defaultPos.x, defaultPos.y);
     return defaultPos;
+}
+
+void GetMapBackgroundBounds(GameMap *map, float *minX, float *maxX, float *minY, float *maxY) {
+    *minX = 0.0f;
+    *maxX = (float)map->mapWidth * map->tileWidth;
+    *minY = 0.0f;
+    *maxY = (float)map->mapHeight * map->tileHeight;
+
+    bool foundBackground = false;
+    float bgMinX = 100000.0f;
+    float bgMaxX = -100000.0f;
+    float bgMinY = 100000.0f;
+    float bgMaxY = -100000.0f;
+
+    for (int i = 0; i < map->layerCount; i++) {
+        TMJLayer *layer = &map->layers[i];
+        if (!layer->visible) continue;
+
+        char lowerName[64];
+        strncpy(lowerName, layer->name, 63);
+        lowerName[63] = '\0';
+        for (int c = 0; lowerName[c]; c++) {
+            if (lowerName[c] >= 'A' && lowerName[c] <= 'Z') {
+                lowerName[c] = lowerName[c] - 'A' + 'a';
+            }
+        }
+
+        if (strstr(lowerName, "background") != NULL) {
+            if (strcmp(layer->type, "objectgroup") == 0) {
+                for (int j = 0; j < layer->objectCount; j++) {
+                    TMJObject *obj = &layer->objects[j];
+                    float objX = obj->x + layer->offsetx;
+                    float objY = obj->y + layer->offsety;
+                    
+                    float top, bottom, left, right;
+                    if (obj->texture.id != 0) {
+                        top = objY - obj->height;
+                        bottom = objY;
+                    } else {
+                        top = objY;
+                        bottom = objY + obj->height;
+                    }
+                    left = objX;
+                    right = objX + obj->width;
+
+                    if (left < bgMinX) bgMinX = left;
+                    if (right > bgMaxX) bgMaxX = right;
+                    if (top < bgMinY) bgMinY = top;
+                    if (bottom > bgMaxY) bgMaxY = bottom;
+                    foundBackground = true;
+                }
+            }
+        }
+    }
+
+    if (foundBackground) {
+        if (bgMinX < 0.0f) bgMinX = 0.0f;
+        if (bgMaxX > *maxX) bgMaxX = *maxX;
+        if (bgMinY < 0.0f) bgMinY = 0.0f;
+        if (bgMaxY > *maxY) bgMaxY = *maxY;
+
+        *minX = bgMinX;
+        *maxX = bgMaxX;
+        *minY = bgMinY;
+        *maxY = bgMaxY;
+    }
 }
 
 int main(void) {
@@ -38,18 +104,16 @@ int main(void) {
   SetTextureFilter(target.texture, TEXTURE_FILTER_POINT);
 
   const char *mapList[] = {
-      "assets/The forestmap 2.tmj",
-      "assets/secondmap.tmj",
-      "assets/Thirdcitymap.tmj",
-      "assets/nowfinishedmap.tmj"
+      "assets/forestmap.tmj",
+      "assets/nightcity.tmj"
   };
-  int totalMaps = 4;
+  int totalMaps = 2;
   int currentMapIndex = 0;
 
   GameMap gameMap = LoadMapData(mapList[currentMapIndex]);
 
   // Find spawn point from the map, or fallback to default
-  Vector2 startPos = FindSpawnPoint(&gameMap, (Vector2){50.0f, 1312.0f});
+  Vector2 startPos = FindSpawnPoint(&gameMap, (Vector2){50.0f, 1168.0f});
 
   Player player = {0};
   InitPlayer(&player, startPos);
@@ -64,20 +128,27 @@ int main(void) {
       "FREE_Cat 2D Pixel Art/FREE_Cat 2D Pixel Art/Sprites/JUMP.png");
   Texture2D texAttack = LoadTexture(
       "FREE_Cat 2D Pixel Art/FREE_Cat 2D Pixel Art/Sprites/ATTACK 1.png");
-  Texture2D texOvertree = LoadTexture("assets/overtree.png");
+  Texture2D texRunJump = LoadTexture(
+      "FREE_Cat 2D Pixel Art/FREE_Cat 2D Pixel Art/Sprites/RUNNING JUMP.png");
+  Texture2D texHurt = LoadTexture(
+      "FREE_Cat 2D Pixel Art/FREE_Cat 2D Pixel Art/Sprites/HURT.png");
 
   MyCamera myCam = CameraNew(player.position.x, player.position.y,
                              VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
   myCam.zoom = 1.42f;
   CameraSetSmoothDamped(&myCam, 10.0f);
-  float mapPixelWidth = (float)gameMap.mapWidth * gameMap.tileWidth;
-  float mapPixelHeight = (float)gameMap.mapHeight * gameMap.tileHeight;
-  CameraSetBounds(&myCam, mapPixelWidth, mapPixelHeight, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+  float bgMinX, bgMaxX, bgMinY, bgMaxY;
+  GetMapBackgroundBounds(&gameMap, &bgMinX, &bgMaxX, &bgMinY, &bgMaxY);
+  CameraSetBounds(&myCam, bgMinX, bgMinY, bgMaxX - bgMinX, bgMaxY - bgMinY);
 
   while (!WindowShouldClose()) {
     float dt = GetFrameTime();
     if (dt > 0.1f) dt = 0.016f; // Cap dt to prevent physics glitches when loading a map takes time!
     UpdatePlayer(&player, &gameMap, dt);
+
+    if (IsKeyPressed(KEY_R)) {
+        player.loadNextMap = true;
+    }
 
     if (player.loadNextMap) {
         currentMapIndex++;
@@ -88,7 +159,7 @@ int main(void) {
         UnloadMapData(&gameMap);
         gameMap = LoadMapData(mapList[currentMapIndex]);
         player.loadNextMap = false;
-        player.position = FindSpawnPoint(&gameMap, (Vector2){100.0f, 100.0f}); // Teleport to spawn point
+        player.position = FindSpawnPoint(&gameMap, (Vector2){50.0f, 1168.0f}); // Teleport to spawn point
         
         // Reset player states completely
         player.velocity = (Vector2){0, 0};
@@ -101,9 +172,9 @@ int main(void) {
         CameraLookAt(&myCam, player.position);
         
         // Update bounds for camera just in case the new map has different dimensions
-        mapPixelWidth = (float)gameMap.mapWidth * gameMap.tileWidth;
-        mapPixelHeight = (float)gameMap.mapHeight * gameMap.tileHeight;
-        CameraSetBounds(&myCam, mapPixelWidth, mapPixelHeight, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+        float bgMinX, bgMaxX, bgMinY, bgMaxY;
+        GetMapBackgroundBounds(&gameMap, &bgMinX, &bgMaxX, &bgMinY, &bgMaxY);
+        CameraSetBounds(&myCam, bgMinX, bgMinY, bgMaxX - bgMinX, bgMaxY - bgMinY);
     }
 
     CameraUpdate(&myCam, player.position, dt);
@@ -111,8 +182,6 @@ int main(void) {
     BeginTextureMode(target);
     ClearBackground(BLACK);
     BeginMode2D(myCam.rl);
-
-    int currentChunk = (int)(player.position.x / 900.0f);
 
     // Duyệt qua từng layer để đảm bảo Z-order đúng
     for (int i = 0; i < gameMap.layerCount; i++) {
@@ -150,34 +219,6 @@ int main(void) {
           }
       }
 
-      // --- VẼ NGƯỜI CHƠI NẰM DƯỚI LỚP CỎ (HOẶC SAU TILE LAYER 1) ---
-      if (TextIsEqual(layer->name, "grass") || TextIsEqual(layer->name, "Tile Layer 1")) {
-        DrawPlayer(&player, texIdle, texWalk, texRun, texJump, texAttack, 64, 64, 0.5f);
-      }
-
-      // TRƯỚC KHI VẼ LỚP LEAFS, VẼ OVERTREE
-      if (TextIsEqual(layer->name, "leafs")) {
-        for (int chunkOffset = -1; chunkOffset <= 2; chunkOffset++) {
-          float offsetX = (currentChunk + chunkOffset) * 900.0f;
-          if (offsetX < -900.0f)
-            continue;
-
-          float overX = offsetX + 900.0f;
-          float overBaseY = 760.0f;
-          float targetTopY = 320.0f; // Hạ đỉnh cây xuống mốc 330
-
-          float overH = overBaseY - targetTopY;
-          float scaleRatio = overH / (float)texOvertree.height;
-          float overW = (float)texOvertree.width * scaleRatio;
-
-          Vector2 origin = {overW / 2.0f, overH};
-          DrawTexturePro(texOvertree,
-                         (Rectangle){0, 0, (float)texOvertree.width,
-                                     (float)texOvertree.height},
-                         (Rectangle){overX, overBaseY, overW, overH}, origin,
-                         0.0f, WHITE);
-        }
-      }
 
       // --- VẼ OBJECT LAYER ---
       if (strcmp(layer->type, "objectgroup") == 0) {
@@ -202,6 +243,8 @@ int main(void) {
       }
     }
 
+    DrawPlayer(&player, texIdle, texWalk, texRun, texJump, texAttack, texRunJump, texHurt, 64, 64, 0.78f);
+
     EndMode2D();
     EndTextureMode();
 
@@ -221,7 +264,8 @@ int main(void) {
   UnloadTexture(texRun);
   UnloadTexture(texJump);
   UnloadTexture(texAttack);
-  UnloadTexture(texOvertree);
+  UnloadTexture(texRunJump);
+  UnloadTexture(texHurt);
   UnloadMapData(&gameMap);
   UnloadRenderTexture(target);
   CloseWindow();

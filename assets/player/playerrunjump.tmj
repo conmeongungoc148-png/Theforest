@@ -1,16 +1,16 @@
 { "compressionlevel":-1,
- "height":1,
+ "height":8,
  "infinite":false,
  "layers":[
         {
          "draworder":"topdown",
          "id":2,
-         "name":"run",
+         "name":"Object Layer 1",
          "objects":[
                 {
-                 "gid":9,
+                 "gid":17,
                  "height":64,
-                 "id":7,
+                 "id":6,
                  "name":"",
                  "opacity":1,
                  "rotation":0,
@@ -27,31 +27,23 @@
          "y":0
         }],
  "nextlayerid":3,
- "nextobjectid":8,
+ "nextobjectid":7,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.1",
  "tileheight":64,
  "tilesets":[
         {
+         "columns":15,
          "firstgid":1,
-         "source":"..\/projects\/RUN.tsx"
-        }, 
-        {
-         "firstgid":9,
-         "source":"..\/projects\/IDLE.tsx"
-        }, 
-        {
-         "columns":12,
-         "firstgid":17,
-         "image":"..\/..\/..\/1AG]\/Theforest\/FREE_Cat 2D Pixel Art\/FREE_Cat 2D Pixel Art\/Sprites\/WALK.png",
-         "imageheight":64,
-         "imagewidth":960,
+         "image":"..\/..\/..\/1AG]\/Theforest\/Agis\/Agis.png",
+         "imageheight":240,
+         "imagewidth":3360,
          "margin":0,
-         "name":"WALK",
-         "spacing":16,
-         "tilecount":12,
-         "tileheight":64,
+         "name":"Agis",
+         "spacing":0,
+         "tilecount":15,
+         "tileheight":240,
          "tiles":[
                 {
                  "animation":[
@@ -86,6 +78,35 @@
                         {
                          "duration":100,
                          "tileid":7
+                        },
+                    
+                        {
+                         "duration":100,
+                         "tileid":8
+                        }, 
+                        {
+                         "duration":100,
+                         "tileid":9
+                        }, 
+                        {
+                         "duration":100,
+                         "tileid":10
+                        }, 
+                        {
+                         "duration":100,
+                         "tileid":11
+                        }, 
+                        {
+                         "duration":100,
+                         "tileid":12
+                        }, 
+                        {
+                         "duration":100,
+                         "tileid":13
+                        }, 
+                        {
+                         "duration":100,
+                         "tileid":14
                         }],
                  "id":0
                 }, 
@@ -140,7 +161,45 @@
                          "duration":100,
                          "tileid":11
                         }],
-                 "id":11
+                 "id":3
+                }],
+         "tilewidth":224
+        }, 
+        {
+         "columns":3,
+         "firstgid":16,
+         "image":"..\/..\/..\/1AG]\/Theforest\/FREE_Cat 2D Pixel Art\/FREE_Cat 2D Pixel Art\/Sprites\/RUNNING JUMP.png",
+         "imageheight":64,
+         "imagewidth":240,
+         "margin":0,
+         "name":"RUNNING JUMP",
+         "spacing":16,
+         "tilecount":3,
+         "tileheight":64,
+         "tiles":[
+                {
+                 "animation":[
+                        {
+                         "duration":100,
+                         "tileid":0
+                        }, 
+                        {
+                         "duration":100,
+                         "tileid":1
+                        }, 
+                        {
+                         "duration":100,
+                         "tileid":1
+                        }, 
+                        {
+                         "duration":100,
+                         "tileid":1
+                        }, 
+                        {
+                         "duration":100,
+                         "tileid":2
+                        }],
+                 "id":1
                 }],
          "tilewidth":64
         }],

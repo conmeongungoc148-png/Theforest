@@ -55,7 +55,7 @@ void CameraUpdate(MyCamera *cam, Vector2 targetPos, float deltaTime);
 void CameraSetDeadzone(MyCamera *cam, float w, float h);
 
 // Bật giới hạn biên bản đồ
-void CameraSetBounds(MyCamera *cam, float mapW, float mapH, float screenW, float screenH);
+void CameraSetBounds(MyCamera *cam, float x, float y, float w, float h);
 
 // Chế độ Smooth
 void CameraSetSmoothNone(MyCamera *cam);

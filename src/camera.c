@@ -159,13 +159,12 @@ void CameraSetDeadzone(MyCamera *cam, float w, float h) {
 }
 
 // --- Bounds (Giới hạn biên) ---
-void CameraSetBounds(MyCamera *cam, float mapW, float mapH, float screenW, float screenH) {
+void CameraSetBounds(MyCamera *cam, float x, float y, float w, float h) {
     cam->boundsEnabled   = true;
-    cam->bounds.x        = 0;
-    cam->bounds.y        = 0;
-    cam->bounds.width    = mapW;
-    cam->bounds.height   = mapH;
-    (void)screenW; (void)screenH; // Dùng offset của Raylib thay thế
+    cam->bounds.x        = x;
+    cam->bounds.y        = y;
+    cam->bounds.width    = w;
+    cam->bounds.height   = h;
 }
 
 // --- Smooth Modes ---
