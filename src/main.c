@@ -105,15 +105,23 @@ int main(void) {
 
   const char *mapList[] = {
       "assets/forestmap.tmj",
-      "assets/nightcity.tmj"
+      "assets/nightcity.tmj",
+      "assets/boss map 1v1.tmj"
   };
-  int totalMaps = 2;
+  // Fallback spawn nếu map không có spawn point object
+  // Boss map: sàn chính y=419, nhân vật cao 64px → đứng tại y = 419 - 64 = 355
+  const Vector2 mapSpawnDefaults[] = {
+      {50.0f,  1168.0f},  // forestmap
+      {50.0f,  1168.0f},  // nightcity
+      {100.0f,  355.0f},  // boss map 1v1
+  };
+  int totalMaps = 3;
   int currentMapIndex = 0;
 
   GameMap gameMap = LoadMapData(mapList[currentMapIndex]);
 
   // Find spawn point from the map, or fallback to default
-  Vector2 startPos = FindSpawnPoint(&gameMap, (Vector2){50.0f, 1168.0f});
+  Vector2 startPos = FindSpawnPoint(&gameMap, mapSpawnDefaults[currentMapIndex]);
 
   Player player = {0};
   InitPlayer(&player, startPos);
@@ -145,6 +153,15 @@ int main(void) {
     float dt = GetFrameTime();
     if (dt > 0.1f) dt = 0.016f; // Cap dt to prevent physics glitches when loading a map takes time!
     UpdatePlayer(&player, &gameMap, dt);
+    UpdateSkills(&player, dt);
+
+    // Skill casting
+    if (IsKeyPressed(KEY_Q)) {
+      CastSkill(&player, "assets/skills/redfire.tmj");
+    }
+    if (IsKeyPressed(KEY_E)) {
+      CastSkill(&player, "assets/skills/redclaw.tmj");
+    }
 
     if (IsKeyPressed(KEY_R)) {
         player.loadNextMap = true;
@@ -159,7 +176,7 @@ int main(void) {
         UnloadMapData(&gameMap);
         gameMap = LoadMapData(mapList[currentMapIndex]);
         player.loadNextMap = false;
-        player.position = FindSpawnPoint(&gameMap, (Vector2){50.0f, 1168.0f}); // Teleport to spawn point
+        player.position = FindSpawnPoint(&gameMap, mapSpawnDefaults[currentMapIndex]); // Teleport to spawn point
         
         // Reset player states completely
         player.velocity = (Vector2){0, 0};
@@ -183,11 +200,56 @@ int main(void) {
     ClearBackground(BLACK);
     BeginMode2D(myCam.rl);
 
-    // Duyệt qua từng layer để đảm bảo Z-order đúng
+    // Pass 1: Vẽ các layer background trước (tên chứa "background", "sky", "mountain")
     for (int i = 0; i < gameMap.layerCount; i++) {
       TMJLayer *layer = &gameMap.layers[i];
-      if (!layer->visible)
+      if (!layer->visible) continue;
+      char lname[64];
+      strncpy(lname, layer->name, 63); lname[63] = '\0';
+      for (int c = 0; lname[c]; c++) if (lname[c] >= 'A' && lname[c] <= 'Z') lname[c] += 32;
+      if (strstr(lname, "background") == NULL && strstr(lname, "sky") == NULL && strstr(lname, "mountain") == NULL)
         continue;
+      if (strcmp(layer->type, "objectgroup") == 0) {
+        for (int j = 0; j < layer->objectCount; j++) {
+          TMJObject *obj = &layer->objects[j];
+          if (!obj->visible || obj->texture.id == 0) continue;
+          Rectangle source = {0, 0, (float)obj->texture.width, (float)obj->texture.height};
+          if (obj->flipX) source.width = -source.width;
+          if (obj->flipY) source.height = -source.height;
+          Rectangle dest = {obj->x + layer->offsetx, obj->y + layer->offsety, obj->width, obj->height};
+          Vector2 origin = {0, obj->height};
+          DrawTexturePro(obj->texture, source, dest, origin, obj->rotation,
+                         Fade(WHITE, layer->opacity * obj->opacity));
+        }
+      }
+    }
+
+    // Pass 2: Vẽ tất cả layers còn lại theo thứ tự
+    for (int i = 0; i < gameMap.layerCount; i++) {
+      TMJLayer *layer = &gameMap.layers[i];
+      if (!layer->visible) continue;
+
+      // Tên layer lowercase để so sánh
+      char lowerName[64];
+      strncpy(lowerName, layer->name, 63); lowerName[63] = '\0';
+      for (int c = 0; lowerName[c]; c++) if (lowerName[c] >= 'A' && lowerName[c] <= 'Z') lowerName[c] += 32;
+
+      // Skip background layers (đã vẽ ở pass 1)
+      if (strstr(lowerName, "background") != NULL || strstr(lowerName, "sky") != NULL || strstr(lowerName, "mountain") != NULL)
+        continue;
+
+      // Skip layer "ground" - chỉ dùng cho collision
+      if (strstr(lowerName, "ground") != NULL) {
+        if (IsKeyDown(KEY_G)) {
+          for (int j = 0; j < layer->objectCount; j++) {
+            TMJObject *obj = &layer->objects[j];
+            DrawRectangleLines((int)(obj->x + layer->offsetx),
+                               (int)(obj->y + layer->offsety),
+                               (int)obj->width, (int)obj->height, GREEN);
+          }
+        }
+        continue;
+      }
 
       // --- VẼ TILE LAYER ---
       if (strcmp(layer->type, "tilelayer") == 0 && layer->data != NULL) {
@@ -244,6 +306,7 @@ int main(void) {
     }
 
     DrawPlayer(&player, texIdle, texWalk, texRun, texJump, texAttack, texRunJump, texHurt, 64, 64, 0.78f);
+    DrawSkills(&player);
 
     EndMode2D();
     EndTextureMode();
